@@ -10,7 +10,7 @@ pub(crate) struct ChunkStoreManifest {
     pub(crate) chunks: Vec<([u8; 20], Chunk)>,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub(crate) struct Chunk {
     pub(crate) offset: u64,
     pub(crate) uncompressed_length: u32,
