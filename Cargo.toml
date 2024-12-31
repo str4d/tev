@@ -1,0 +1,8 @@
+[package]
+name = "expansion-valve"
+version = "0.0.0"
+edition = "2021"
+description = "Viewer and decompressor for Steam backup files"
+
+[dependencies]
+anyhow = "1"
