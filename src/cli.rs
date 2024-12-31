@@ -11,7 +11,8 @@ pub(crate) struct Options {
 #[derive(Debug, Subcommand)]
 pub(crate) enum Command {
     Inspect(Inspect),
-    VerifyBackup(VerifyBackup),
+    #[command(subcommand)]
+    Backup(Backup),
 }
 
 /// Inspect a Steam file.
@@ -19,6 +20,12 @@ pub(crate) enum Command {
 pub(crate) struct Inspect {
     /// Path to the file.
     pub(crate) path: PathBuf,
+}
+
+/// Manage Steam game backups.
+#[derive(Debug, Subcommand)]
+pub(crate) enum Backup {
+    Verify(VerifyBackup),
 }
 
 /// Verify a Steam game backup.

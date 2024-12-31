@@ -1,2 +1,2 @@
+mod backup;
 mod inspect;
-mod verify_backup;
