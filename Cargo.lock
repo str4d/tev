@@ -348,22 +348,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
 
 [[package]]
-name = "expansion-valve"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "byte-unit",
- "clap",
- "fuser",
- "hex",
- "libc",
- "nom",
- "sha1",
- "steam-vent-proto",
- "zip",
-]
-
-[[package]]
 name = "flate2"
 version = "1.0.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -782,6 +766,22 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "tev"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "byte-unit",
+ "clap",
+ "fuser",
+ "hex",
+ "libc",
+ "nom",
+ "sha1",
+ "steam-vent-proto",
+ "zip",
 ]
 
 [[package]]

@@ -1,5 +1,5 @@
 [package]
-name = "expansion-valve"
+name = "tev"
 version = "0.0.0"
 edition = "2021"
 description = "Viewer and decompressor for Steam backup files"
