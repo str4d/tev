@@ -26,6 +26,7 @@ pub(crate) struct Inspect {
 #[derive(Debug, Subcommand)]
 pub(crate) enum Backup {
     Verify(VerifyBackup),
+    Mount(MountBackup),
 }
 
 /// Verify a Steam game backup.
@@ -33,4 +34,18 @@ pub(crate) enum Backup {
 pub(crate) struct VerifyBackup {
     /// Path to the game's backup folder, or a file within it.
     pub(crate) path: PathBuf,
+}
+
+/// Mount a Steam game backup.
+#[derive(Debug, Args)]
+pub(crate) struct MountBackup {
+    /// Path to the game's backup folder, or a file within it.
+    pub(crate) path: PathBuf,
+
+    /// Path to the game's backup folder, or a file within it.
+    pub(crate) mountpoint: PathBuf,
+
+    /// Path to the folder containing the user's cached manifest files.
+    #[arg(long)]
+    pub(crate) manifest_dir: PathBuf,
 }

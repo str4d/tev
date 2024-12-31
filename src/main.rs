@@ -10,5 +10,6 @@ fn main() -> anyhow::Result<()> {
     match opts.command {
         cli::Command::Inspect(command) => command.run(),
         cli::Command::Backup(cli::Backup::Verify(command)) => command.run(),
+        cli::Command::Backup(cli::Backup::Mount(command)) => command.run(),
     }
 }

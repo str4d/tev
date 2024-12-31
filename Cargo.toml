@@ -13,3 +13,7 @@ nom = "7"
 sha1 = "0.10"
 steam-vent-proto = "0.5"
 zip = "2"
+
+# Mount
+fuser = "0.15"
+libc = "0.2"
