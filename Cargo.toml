@@ -6,3 +6,8 @@ description = "Viewer and decompressor for Steam backup files"
 
 [dependencies]
 anyhow = "1"
+clap = { version = "4.5", features = ["derive"] }
+hex = "0.4"
+nom = "7"
+sha1 = "0.10"
+zip = "2"
