@@ -84,6 +84,66 @@ impl Inspect {
                     Byte::from_u64(metadata.size()).get_appropriate_unit(UnitType::Binary);
                 println!("Compressed size: {compressed_size:#.2}");
             }
+            Some(s) if s.eq_ignore_ascii_case("manifest") => {
+                let manifest = formats::manifest::Manifest::read(&self.path)?;
+
+                println!("Manifest: {}", manifest.metadata.gid_manifest());
+                println!("Depot: {}", manifest.metadata.depot_id());
+                println!("Creation time: {}", manifest.metadata.creation_time());
+                println!(
+                    "Filenames encrypted: {}",
+                    manifest.metadata.filenames_encrypted(),
+                );
+
+                let original_size = Byte::from_u64(manifest.metadata.cb_disk_original())
+                    .get_appropriate_unit(UnitType::Binary);
+                println!("Original size: {original_size:#.2}");
+
+                let compressed_size = Byte::from_u64(manifest.metadata.cb_disk_compressed())
+                    .get_appropriate_unit(UnitType::Binary);
+                println!("Compressed size: {compressed_size:#.2}");
+
+                println!("Unique chunks: {}", manifest.metadata.unique_chunks());
+                println!(
+                    "CRCs: {:#08x} (encrypted)",
+                    manifest.metadata.crc_encrypted(),
+                );
+                println!("      {:#08x} (clear)", manifest.metadata.crc_clear());
+                if manifest.signature.has_signature() {
+                    println!("Signature: {}", hex::encode(manifest.signature.signature()));
+                }
+
+                println!("Files:");
+                for file_mapping in manifest.payload.mappings {
+                    let d = if file_mapping.flags() & 0b0100_0000 != 0 {
+                        "d"
+                    } else {
+                        "-"
+                    };
+                    let x = if file_mapping.flags() & 0b1_0000_0000 != 0 {
+                        "x"
+                    } else {
+                        "-"
+                    };
+
+                    let file_size =
+                        Byte::from_u64(file_mapping.size()).get_appropriate_unit(UnitType::Binary);
+
+                    println!(
+                        "{d}r-{x} {file_size:>+10.2} {}{}",
+                        if manifest.metadata.filenames_encrypted() {
+                            hex::encode(file_mapping.sha_filename())
+                        } else {
+                            file_mapping.filename().into()
+                        },
+                        if file_mapping.linktarget().is_empty() {
+                            "".into()
+                        } else {
+                            format!(" {}", file_mapping.linktarget())
+                        },
+                    );
+                }
+            }
             _ => println!("Unknown format"),
         }
 

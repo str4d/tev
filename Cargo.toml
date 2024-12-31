@@ -11,4 +11,5 @@ clap = { version = "4.5", features = ["derive"] }
 hex = "0.4"
 nom = "7"
 sha1 = "0.10"
+steam-vent-proto = "0.5"
 zip = "2"
