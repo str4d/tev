@@ -1,8 +1,13 @@
 [package]
 name = "tev"
 version = "0.0.0"
+authors = ["Jack Grigg <thestr4d@gmail.com>"]
 edition = "2021"
-description = "Viewer and decompressor for Steam backup files"
+description = "Tool for interacting with Steam backup files"
+repository = "https://github.com/str4d/tev"
+license = "MIT OR Apache-2.0"
+keywords = ["backup", "mount"]
+categories = ["command-line-utilities", "games"]
 
 [dependencies]
 anyhow = "1"
