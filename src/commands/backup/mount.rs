@@ -478,7 +478,7 @@ impl Filesystem for BackupFs {
                     let chunk_start = chunk.offset();
                     let chunk_end = chunk.offset() + u64::from(chunk.cb_original());
 
-                    if read_start < chunk_end || chunk_start < read_end {
+                    if read_start < chunk_end && chunk_start < read_end {
                         // This chunk contains requested data.
                         let sha = chunk.sha().try_into().unwrap();
                         let chunkstore = self.chunks.get(&sha).expect("correct by construction");
