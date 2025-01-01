@@ -19,6 +19,15 @@ sha1 = "0.10"
 steam-vent-proto = "0.5"
 zip = "2"
 
+# Async
+futures-util = "0.3"
+tokio = { version = "1", features = [
+    "fs",
+    "io-util",
+    "rt-multi-thread",
+    "tracing",
+] }
+
 # Mount
 fuser = "0.15"
 libc = "0.2"

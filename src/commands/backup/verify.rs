@@ -6,12 +6,13 @@ use std::os::unix::fs::MetadataExt;
 use std::os::windows::fs::MetadataExt;
 
 use anyhow::anyhow;
+use futures_util::future;
 
 use crate::formats::csd::ChunkStore;
 use crate::{cli::VerifyBackup, formats};
 
 impl VerifyBackup {
-    pub(crate) fn run(self) -> anyhow::Result<()> {
+    pub(crate) async fn run(self) -> anyhow::Result<()> {
         let base_dir = {
             let metadata = self.path.metadata()?;
             if metadata.is_dir() {
@@ -40,13 +41,23 @@ impl VerifyBackup {
                 .get(&depot)
                 .ok_or(anyhow!("Missing chunkstore for depot {depot}"))?;
 
-            for (chunkstore_index, chunkstore_length) in chunkstores {
-                valid &= verify_chunkstore(
-                    &base_dir,
-                    depot,
-                    *chunkstore_index,
-                    u64::from(*chunkstore_length),
-                );
+            for res in future::join_all(chunkstores.iter().map(
+                |(&chunkstore_index, &chunkstore_length)| {
+                    let base_dir = base_dir.clone();
+                    tokio::spawn(async move {
+                        verify_chunkstore(
+                            &base_dir,
+                            depot,
+                            chunkstore_index,
+                            u64::from(chunkstore_length),
+                        )
+                        .await
+                    })
+                },
+            ))
+            .await
+            {
+                valid &= res?;
             }
         }
 
@@ -58,7 +69,7 @@ impl VerifyBackup {
     }
 }
 
-fn verify_chunkstore(
+async fn verify_chunkstore(
     base_dir: &Path,
     depot: u32,
     chunkstore_index: u32,
@@ -66,7 +77,7 @@ fn verify_chunkstore(
 ) -> bool {
     let mut valid = true;
 
-    let mut chunkstore = match ChunkStore::open(base_dir, depot, chunkstore_index) {
+    let mut chunkstore = match ChunkStore::open(base_dir, depot, chunkstore_index).await {
         Ok(chunkstore) => chunkstore,
         Err(e) => {
             println!("- {e}");
@@ -88,7 +99,7 @@ fn verify_chunkstore(
     let chunks = chunkstore.csm.chunks.clone();
 
     for (sha, chunk) in chunks {
-        if let Err(e) = chunkstore.chunk_data(sha) {
+        if let Err(e) = chunkstore.chunk_data(sha).await {
             valid = false;
             println!("- {e}");
         };

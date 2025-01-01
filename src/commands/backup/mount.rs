@@ -1,16 +1,17 @@
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
-    rc::Rc,
-    sync::RwLock,
+    sync::{Arc, RwLock},
     time::{Duration, UNIX_EPOCH},
 };
 
 use anyhow::{anyhow, Context};
 use fuser::{FileAttr, FileType, Filesystem, MountOption};
+use futures_util::future;
 use steam_vent_proto::content_manifest::{
     content_manifest_payload::FileMapping, ContentManifestMetadata,
 };
+use tokio::runtime::{Builder, Runtime};
 
 use crate::{
     cli::MountBackup,
@@ -68,18 +69,18 @@ fn steam_to_filetype(file_mapping: Option<&FileMapping>) -> FileType {
 
 enum Node {
     Real {
-        metadata: Rc<ContentManifestMetadata>,
+        metadata: Arc<ContentManifestMetadata>,
         path: PathBuf,
         file_mapping: FileMapping,
     },
     Synthetic {
-        metadata: Rc<ContentManifestMetadata>,
+        metadata: Arc<ContentManifestMetadata>,
         name: String,
     },
 }
 
 impl Node {
-    fn metadata(&self) -> &Rc<ContentManifestMetadata> {
+    fn metadata(&self) -> &Arc<ContentManifestMetadata> {
         match self {
             Node::Real { metadata, .. } => metadata,
             Node::Synthetic { metadata, .. } => metadata,
@@ -168,7 +169,8 @@ const ROOT_ATTR: &FileAttr = &FileAttr {
 
 struct BackupFs {
     sku: StockKeepingUnit,
-    chunks: HashMap<[u8; 20], Rc<RwLock<ChunkStore>>>,
+    runtime: Runtime,
+    chunks: HashMap<[u8; 20], Arc<RwLock<ChunkStore>>>,
     blocks: u64,
     /// The filesystem's inodes, excluding the root.
     ///
@@ -211,16 +213,19 @@ impl BackupFs {
             })
             .collect::<anyhow::Result<Vec<_>>>()?;
 
+        let runtime = Builder::new_current_thread().build()?;
+
         // Open all of the chunkstores.
-        let chunkstores = sku
-            .chunkstores
-            .iter()
-            .flat_map(|(depot, chunkstores)| {
-                let base_dir = &base_dir;
-                chunkstores.keys().map(move |chunkstore_index| {
-                    ChunkStore::open(base_dir, *depot, *chunkstore_index)
-                })
-            })
+        let chunkstores = runtime
+            .block_on(future::join_all(sku.chunkstores.iter().flat_map(
+                |(depot, chunkstores)| {
+                    let base_dir = &base_dir;
+                    chunkstores.keys().map(move |chunkstore_index| {
+                        ChunkStore::open(base_dir, *depot, *chunkstore_index)
+                    })
+                },
+            )))
+            .into_iter()
             .collect::<Result<Vec<_>, _>>()?;
 
         let mut chunks = HashMap::new();
@@ -232,7 +237,7 @@ impl BackupFs {
                 .map(|(sha, _)| *sha)
                 .collect::<Vec<_>>();
 
-            let chunkstore = Rc::new(RwLock::new(chunkstore));
+            let chunkstore = Arc::new(RwLock::new(chunkstore));
             for sha in chunk_shas {
                 chunks.insert(sha, chunkstore.clone());
             }
@@ -246,7 +251,7 @@ impl BackupFs {
                     payload, metadata, ..
                 } = manifest;
 
-                let metadata = Rc::new(metadata);
+                let metadata = Arc::new(metadata);
 
                 payload.mappings.into_iter().map(move |mut file_mapping| {
                     // Convert file names into platform paths.
@@ -340,6 +345,7 @@ impl BackupFs {
 
         Ok(Self {
             sku,
+            runtime,
             chunks,
             blocks,
             inodes,
@@ -483,7 +489,7 @@ impl Filesystem for BackupFs {
                         let sha = chunk.sha().try_into().unwrap();
                         let chunkstore = self.chunks.get(&sha).expect("correct by construction");
                         let mut chunkstore = chunkstore.write().unwrap();
-                        match chunkstore.chunk_data(sha) {
+                        match self.runtime.block_on(chunkstore.chunk_data(sha)) {
                             Ok(chunk_data) => {
                                 let buf = &mut buf[usize::try_from(
                                     chunk_start.saturating_sub(read_start),

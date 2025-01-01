@@ -6,5 +6,8 @@ All notable changes will be documented in this file. The format is based on
 ### Fixed
 - Fixed panic when attempting to read large files.
 
+### Changed
+- Improved performance of `tev backup verify`.
+
 ## [0.1.0] - 2024-12-31
 Initial release!
