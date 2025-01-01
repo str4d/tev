@@ -8,6 +8,8 @@ All notable changes will be documented in this file. The format is based on
 
 ### Changed
 - Improved performance of `tev backup verify`.
+- Moved `tev backup mount` behind a default-enabled `mount` feature flag, to
+  enable using the rest of `tev` on Windows.
 
 ## [0.1.0] - 2024-12-31
 Initial release!

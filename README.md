@@ -5,8 +5,14 @@ Steam backups.
 
 ## Installation
 
+On Unix systems:
 ```bash
 $ cargo install tev
+```
+
+On Windows systems:
+```bash
+$ cargo install tev --no-default-features
 ```
 
 ## Usage
@@ -48,7 +54,8 @@ Depot files match SKU!
 
 ### Mount a Steam backup
 
-On Unix systems, `tev` can mount an existing Steam backup as a directory:
+On Unix systems with the default-enabled `mount` feature flag, `tev` can mount an existing
+Steam backup as a directory:
 
 ```bash
 $ tev backup mount --manifest-dir path/to/manifests path/to/backups/GameName ./mountpoint

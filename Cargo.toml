@@ -29,5 +29,9 @@ tokio = { version = "1", features = [
 ] }
 
 # Mount
-fuser = "0.15"
-libc = "0.2"
+fuser = { version = "0.15", optional = true }
+libc = { version = "0.2", optional = true }
+
+[features]
+default = ["mount"]
+mount = ["dep:fuser", "dep:libc"]
