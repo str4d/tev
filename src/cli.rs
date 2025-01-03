@@ -26,7 +26,6 @@ pub(crate) struct Inspect {
 #[derive(Debug, Subcommand)]
 pub(crate) enum Backup {
     Verify(VerifyBackup),
-    #[cfg(feature = "mount")]
     Mount(MountBackup),
 }
 

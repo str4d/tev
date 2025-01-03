@@ -366,6 +366,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "dokan"
+version = "0.3.1+dokan220"
+source = "git+https://github.com/dokan-dev/dokan-rust.git?rev=01a2b2e6b231f22798a22382037d97226265a448#01a2b2e6b231f22798a22382037d97226265a448"
+dependencies = [
+ "bitflags",
+ "dokan-sys",
+ "widestring",
+ "winapi",
+]
+
+[[package]]
+name = "dokan-sys"
+version = "0.3.1+dokan220"
+source = "git+https://github.com/dokan-dev/dokan-rust.git?rev=01a2b2e6b231f22798a22382037d97226265a448#01a2b2e6b231f22798a22382037d97226265a448"
+dependencies = [
+ "cc",
+ "libc",
+ "winapi",
+]
+
+[[package]]
 name = "equivalent"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -878,6 +899,7 @@ dependencies = [
  "anyhow",
  "byte-unit",
  "clap",
+ "dokan",
  "fuser",
  "futures-util",
  "hex",
@@ -886,6 +908,8 @@ dependencies = [
  "sha1",
  "steam-vent-proto",
  "tokio",
+ "widestring",
+ "winapi",
  "zip",
 ]
 
@@ -1014,6 +1038,12 @@ name = "wasi"
 version = "0.11.0+wasi-snapshot-preview1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
+
+[[package]]
+name = "widestring"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7219d36b6eac893fa81e84ebe06485e7dcbb616177469b142df14f1f4deb1311"
 
 [[package]]
 name = "winapi"

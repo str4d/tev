@@ -28,10 +28,15 @@ tokio = { version = "1", features = [
     "tracing",
 ] }
 
-# Mount
-fuser = { version = "0.15", optional = true }
-libc = { version = "0.2", optional = true }
+[target.'cfg(unix)'.dependencies]
+fuser = "0.15"
+libc = "0.2"
 
-[features]
-default = ["mount"]
-mount = ["dep:fuser", "dep:libc"]
+[target.'cfg(windows)'.dependencies]
+dokan = "0.3"
+widestring = "1"
+winapi = "0.3"
+
+[patch.crates-io]
+dokan = { git = "https://github.com/dokan-dev/dokan-rust.git", rev = "01a2b2e6b231f22798a22382037d97226265a448" }
+dokan-sys = { git = "https://github.com/dokan-dev/dokan-rust.git", rev = "01a2b2e6b231f22798a22382037d97226265a448" }

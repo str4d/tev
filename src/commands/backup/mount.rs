@@ -16,7 +16,10 @@ use crate::{
     formats::{csd::ChunkStore, manifest::Manifest, sis::StockKeepingUnit},
 };
 
+#[cfg(unix)]
 mod fuse;
+#[cfg(windows)]
+mod windows;
 
 impl MountBackup {
     pub(crate) fn run(self) -> anyhow::Result<()> {
@@ -125,6 +128,7 @@ struct BackupFs {
     open_dirs: HashMap<u64, u64>,
     next_file_fh: u64,
     next_dir_fh: u64,
+    #[cfg(unix)]
     fuse_info: fuse::FsInfo,
 }
 
@@ -282,6 +286,7 @@ impl BackupFs {
             }
         }
 
+        #[cfg(unix)]
         let fuse_info = fuse::FsInfo::prepare(&inodes);
 
         Ok(Self {
@@ -294,6 +299,7 @@ impl BackupFs {
             open_dirs: HashMap::new(),
             next_file_fh: 0,
             next_dir_fh: 0,
+            #[cfg(unix)]
             fuse_info,
         })
     }
