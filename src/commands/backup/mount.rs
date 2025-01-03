@@ -16,7 +16,10 @@ use crate::{
     formats::{csd::ChunkStore, manifest::Manifest, sis::StockKeepingUnit},
 };
 
+#[cfg(unix)]
 mod fuse;
+#[cfg(windows)]
+mod windows;
 
 impl MountBackup {
     pub(crate) fn run(self) -> anyhow::Result<()> {
@@ -120,7 +123,10 @@ struct BackupFs {
     inodes: Vec<Node>,
     /// A map from directory inodes to their contents.
     dir_map: HashMap<u64, Vec<u64>>,
+    #[cfg(unix)]
     fuse_info: fuse::FsInfo,
+    #[cfg(windows)]
+    windows_info: windows::FsInfo,
 }
 
 impl BackupFs {
@@ -213,7 +219,7 @@ impl BackupFs {
         inodes.sort_by_key(|node| node.path().expect("all real nodes").to_path_buf());
         inodes.dedup_by(|a, b| a.path() == b.path());
 
-        // Generate a map from paths to inodes. We only need this temporarily.
+        // Generate a map from paths to inodes.
         let mut path_map = inodes
             .iter()
             .zip(0u64..)
@@ -277,7 +283,11 @@ impl BackupFs {
             }
         }
 
+        #[cfg(unix)]
         let fuse_info = fuse::FsInfo::prepare(&inodes);
+
+        #[cfg(windows)]
+        let windows_info = windows::FsInfo::prepare(path_map);
 
         Ok(Self {
             sku,
@@ -285,7 +295,10 @@ impl BackupFs {
             chunks,
             inodes,
             dir_map,
+            #[cfg(unix)]
             fuse_info,
+            #[cfg(windows)]
+            windows_info,
         })
     }
 }

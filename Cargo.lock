@@ -121,6 +121,12 @@ dependencies = [
 
 [[package]]
 name = "bitflags"
+version = "1.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
+
+[[package]]
+name = "bitflags"
 version = "2.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b048fb63fd8b5923fc5aa7b340d8e156aec7ec02f0c78fa8a6ddc2613f6f71de"
@@ -318,6 +324,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "ctrlc"
+version = "3.4.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "90eeab0aa92f3f9b4e87f258c72b139c207d251f9cbc1080a0086b86a8870dd3"
+dependencies = [
+ "nix",
+ "windows-sys",
+]
+
+[[package]]
 name = "deflate64"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -363,6 +379,29 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "dokan"
+version = "0.3.1+dokan206"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2559899e13c4d1c2ad38fa09be2daf9cde88ff4b70495a70ce4aa371b3b3b1a"
+dependencies = [
+ "bitflags 1.3.2",
+ "dokan-sys",
+ "widestring",
+ "winapi",
+]
+
+[[package]]
+name = "dokan-sys"
+version = "0.3.1+dokan206"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eb7e49e8ac8b6867cd04fc1869a54d4bb32b680180ff2f86d695ef1955534668"
+dependencies = [
+ "cc",
+ "libc",
+ "winapi",
 ]
 
 [[package]]
@@ -577,7 +616,7 @@ version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "71e2746dc3a24dd78b3cfcb7be93368c6de9963d30f43a6a73998a9cf4b17b46"
 dependencies = [
- "bitflags",
+ "bitflags 2.6.0",
  "cfg-if",
  "cfg_aliases",
  "libc",
@@ -878,6 +917,9 @@ dependencies = [
  "anyhow",
  "byte-unit",
  "clap",
+ "ctrlc",
+ "dokan",
+ "dokan-sys",
  "fuser",
  "futures-util",
  "hex",
@@ -886,6 +928,8 @@ dependencies = [
  "sha1",
  "steam-vent-proto",
  "tokio",
+ "widestring",
+ "winapi",
  "zip",
 ]
 
@@ -1014,6 +1058,12 @@ name = "wasi"
 version = "0.11.0+wasi-snapshot-preview1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
+
+[[package]]
+name = "widestring"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c168940144dd21fd8046987c16a46a33d5fc84eec29ef9dcddc2ac9e31526b7c"
 
 [[package]]
 name = "winapi"

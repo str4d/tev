@@ -3,6 +3,11 @@ All notable changes will be documented in this file. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+### Added
+- Windows support for `tev backup mount` via [Dokan](https://github.com/dokan-dev/dokany).
+
+### Removed
+- `mount` feature flag (as `tev backup mount` now works on Windows).
 
 ## [0.1.2] - 2025-01-03
 ### Fixed

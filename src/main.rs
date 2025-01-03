@@ -16,7 +16,6 @@ fn main() -> anyhow::Result<()> {
                 .build()?;
             runtime.block_on(command.run())
         }
-        #[cfg(feature = "mount")]
         cli::Command::Backup(cli::Backup::Mount(command)) => command.run(),
     }
 }
