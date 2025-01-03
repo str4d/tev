@@ -4,6 +4,10 @@ All notable changes will be documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.1.2] - 2025-01-03
+### Fixed
+- Fixed a compilation bug on Windows.
+
 ## [0.1.1] - 2025-01-01
 ### Fixed
 - Fixed panic when attempting to read large files.

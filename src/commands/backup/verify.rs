@@ -1,10 +1,5 @@
 use std::path::Path;
 
-#[cfg(unix)]
-use std::os::unix::fs::MetadataExt;
-#[cfg(windows)]
-use std::os::windows::fs::MetadataExt;
-
 use anyhow::anyhow;
 use futures_util::future;
 
@@ -85,13 +80,13 @@ async fn verify_chunkstore(
         }
     };
 
-    if chunkstore.csd_metadata.size() != chunkstore_length {
+    if chunkstore.csd_metadata.len() != chunkstore_length {
         valid = false;
         println!(
             "- {} should be {} bytes according to the SKU, but is actually {} bytes",
             chunkstore.csm_filename,
             chunkstore_length,
-            chunkstore.csd_metadata.size(),
+            chunkstore.csd_metadata.len(),
         );
     }
 

@@ -1,8 +1,3 @@
-#[cfg(unix)]
-use std::os::unix::fs::MetadataExt;
-#[cfg(windows)]
-use std::os::windows::fs::MetadataExt;
-
 use anyhow::anyhow;
 use byte_unit::{Byte, UnitType};
 
@@ -81,7 +76,7 @@ impl Inspect {
                 println!("Depot: {}", depot);
 
                 let compressed_size =
-                    Byte::from_u64(metadata.size()).get_appropriate_unit(UnitType::Binary);
+                    Byte::from_u64(metadata.len()).get_appropriate_unit(UnitType::Binary);
                 println!("Compressed size: {compressed_size:#.2}");
             }
             Some(s) if s.eq_ignore_ascii_case("manifest") => {
