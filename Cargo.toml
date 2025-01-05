@@ -1,6 +1,6 @@
 [package]
 name = "tev"
-version = "0.1.2"
+version = "0.2.0"
 authors = ["Jack Grigg <thestr4d@gmail.com>"]
 edition = "2021"
 description = "Tool for interacting with Steam backup files"
