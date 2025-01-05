@@ -13,6 +13,7 @@ categories = ["command-line-utilities", "games"]
 anyhow = "1"
 byte-unit = { version = "5", default-features = false, features = ["byte"] }
 clap = { version = "4.5", features = ["derive"] }
+ctrlc = "3"
 hex = "0.4"
 nom = "7"
 sha1 = "0.10"
@@ -33,7 +34,6 @@ fuser = "0.15"
 libc = "0.2"
 
 [target.'cfg(windows)'.dependencies]
-ctrlc = "3"
 dokan = "0.3"
 dokan-sys = "0.3"
 widestring = "0.4"

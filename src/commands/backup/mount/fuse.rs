@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::mpsc;
 use std::time::Duration;
 use std::time::UNIX_EPOCH;
 
@@ -98,18 +99,30 @@ impl FsInfo {
 
 impl BackupFs {
     pub(super) fn mount(self, mountpoint: PathBuf) -> anyhow::Result<()> {
+        let (tx, rx) = mpsc::channel();
+        ctrlc::set_handler(move || tx.send(()).expect("Could not send signal on channel."))
+            .context("Error setting Ctrl-C handler")?;
+
         let name = self.sku.name.clone();
 
-        fuser::mount2(
+        // Mount the filesystem.
+        let fs = fuser::spawn_mount2(
             self,
-            mountpoint,
+            &mountpoint,
             &[
                 MountOption::RO,
-                MountOption::FSName(name),
-                MountOption::AutoUnmount,
+                MountOption::FSName(name.clone()),
+                MountOption::AllowOther,
             ],
         )
         .context("Runtime")?;
+
+        println!("Mounted '{name}' at {}", mountpoint.display());
+        println!("Waiting for Ctrl-C...");
+        rx.recv().expect("Could not receive from channel");
+
+        // Unmount the filesystem.
+        drop(fs);
 
         Ok(())
     }

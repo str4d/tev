@@ -85,6 +85,8 @@ impl BackupFs {
         ctrlc::set_handler(move || tx.send(()).expect("Could not send signal on channel."))
             .context("Error setting Ctrl-C handler")?;
 
+        let name = self.sku.name.clone();
+
         let options = MountOptions {
             flags: MountFlags::WRITE_PROTECT,
             ..Default::default()
@@ -99,6 +101,8 @@ impl BackupFs {
         let mut mounter = FileSystemMounter::new(&self, &mount_point, &options);
         let fs = mounter.mount()?;
 
+        println!("Mounted '{name}' at {}", mountpoint.display());
+        println!("Waiting for Ctrl-C...");
         rx.recv().expect("Could not receive from channel");
 
         // Unmount the filesystem.
