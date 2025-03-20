@@ -931,6 +931,7 @@ dependencies = [
  "widestring",
  "winapi",
  "zip",
+ "zstd",
 ]
 
 [[package]]
