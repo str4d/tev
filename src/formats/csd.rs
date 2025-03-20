@@ -137,6 +137,9 @@ fn decompress_and_verify(
         b"PK" => Ok(ZipArchive::new(Cursor::new(&compressed))?
             .by_index(0)?
             .read_to_end(&mut data)?),
+        b"VS" => Ok(zstd::Decoder::new(&compressed[8..])?
+            .single_frame()
+            .read_to_end(&mut data)?),
         x => Err(anyhow!(
             "Unknown chunk compression type {}",
             if let Ok(s) = std::str::from_utf8(x) {

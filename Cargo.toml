@@ -19,6 +19,7 @@ nom = "7"
 sha1 = "0.10"
 steam-vent-proto = "0.5"
 zip = "2"
+zstd = "0.13"
 
 # Async
 futures-util = "0.3"
