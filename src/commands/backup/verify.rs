@@ -1,10 +1,12 @@
 use std::path::Path;
 
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use futures_util::future;
 
-use crate::formats::csd::ChunkStore;
-use crate::{cli::VerifyBackup, formats};
+use crate::{
+    cli::VerifyBackup,
+    formats::{csd::ChunkStore, manifest::Manifest, sis::StockKeepingUnit},
+};
 
 impl VerifyBackup {
     pub(crate) async fn run(self) -> anyhow::Result<()> {
@@ -23,7 +25,7 @@ impl VerifyBackup {
             }?
         };
 
-        let sku = formats::sis::StockKeepingUnit::read(&base_dir.join("sku.sis"))?;
+        let sku = StockKeepingUnit::read(&base_dir.join("sku.sis"))?;
         println!("Game: {}", sku.name);
 
         let mut valid = true;
@@ -31,10 +33,36 @@ impl VerifyBackup {
         for depot in sku.depots {
             println!("Verifying depot {depot}");
 
+            let manifest = self
+                .manifest_dir
+                .as_ref()
+                .zip(sku.manifests.get(&depot))
+                .map(|(manifest_dir, manifest)| {
+                    let manifest_path =
+                        manifest_dir.join(format!("{}_{}.manifest", depot, manifest));
+                    let manifest = Manifest::read(&manifest_path).with_context(|| {
+                        format!(
+                            "Cannot find manifest {manifest} for depot {depot} in {}",
+                            manifest_dir.display()
+                        )
+                    })?;
+                    if manifest.metadata.depot_id() == depot {
+                        Ok(manifest)
+                    } else {
+                        Err(anyhow!(
+                            "{} does not belong to depot {depot}",
+                            manifest_path.display()
+                        ))
+                    }
+                })
+                .transpose()?;
+
             let chunkstores = sku
                 .chunkstores
                 .get(&depot)
                 .ok_or(anyhow!("Missing chunkstore for depot {depot}"))?;
+
+            let mut depot_chunks = 0;
 
             for res in future::join_all(chunkstores.iter().map(
                 |(&chunkstore_index, &chunkstore_length)| {
@@ -52,7 +80,18 @@ impl VerifyBackup {
             ))
             .await
             {
-                valid &= res?;
+                if let Some(chunks_read) = res? {
+                    depot_chunks += chunks_read;
+                } else {
+                    valid = false;
+                }
+            }
+
+            if let Some(manifest) = manifest {
+                let unique_chunks = manifest.metadata.unique_chunks();
+                if unique_chunks != depot_chunks {
+                    println!("Depot {depot} has {unique_chunks} chunks in manifest but {depot_chunks} chunks on disk");
+                }
             }
         }
 
@@ -69,14 +108,14 @@ async fn verify_chunkstore(
     depot: u32,
     chunkstore_index: u32,
     chunkstore_length: u64,
-) -> bool {
+) -> Option<u32> {
     let mut valid = true;
 
     let mut chunkstore = match ChunkStore::open(base_dir, depot, chunkstore_index).await {
         Ok(chunkstore) => chunkstore,
         Err(e) => {
             println!("- {e}");
-            return false;
+            return None;
         }
     };
 
@@ -92,6 +131,7 @@ async fn verify_chunkstore(
 
     let mut bytes_read = 0;
     let chunks = chunkstore.csm.chunks.clone();
+    let num_chunks = chunks.len();
 
     for (sha, chunk) in chunks {
         if let Err(e) = chunkstore.chunk_data(sha).await {
@@ -111,5 +151,5 @@ async fn verify_chunkstore(
         }
     }
 
-    valid
+    valid.then_some(num_chunks as u32)
 }

@@ -5,6 +5,8 @@ All notable changes will be documented in this file. The format is based on
 ## [Unreleased]
 ### Added
 - Support for recent Steam backups compressed with zstd.
+- `--manifest-dir` argument to `tev backup verify`, to optionally verify
+  matching cached manifest files.
 
 ## [0.2.0] - 2025-01-05
 ### Added

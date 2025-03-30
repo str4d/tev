@@ -30,10 +30,17 @@ pub(crate) enum Backup {
 }
 
 /// Verify a Steam game backup.
+///
+/// If `--manifest-dir` is provided, it will be checked for the presence of the manifest
+/// files necessary to access the files in this backup.
 #[derive(Debug, Args)]
 pub(crate) struct VerifyBackup {
     /// Path to the game's backup folder, or a file within it.
     pub(crate) path: PathBuf,
+
+    /// Path to the folder containing the user's cached manifest files.
+    #[arg(long)]
+    pub(crate) manifest_dir: Option<PathBuf>,
 }
 
 /// Mount a Steam game backup.
