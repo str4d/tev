@@ -80,7 +80,7 @@ impl Inspect {
                 println!("Compressed size: {compressed_size:#.2}");
             }
             Some(s) if s.eq_ignore_ascii_case("manifest") => {
-                let manifest = formats::manifest::Manifest::read(&self.path)?;
+                let manifest = formats::manifest::Manifest::open(&self.path)?;
 
                 println!("Manifest: {}", manifest.metadata.gid_manifest());
                 println!("Depot: {}", manifest.metadata.depot_id());

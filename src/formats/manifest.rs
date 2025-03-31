@@ -20,7 +20,7 @@ pub(crate) struct Manifest {
 }
 
 impl Manifest {
-    pub(crate) fn read(path: &Path) -> anyhow::Result<Self> {
+    pub(crate) fn open(path: &Path) -> anyhow::Result<Self> {
         if !path
             .extension()
             .map_or(false, |s| s.eq_ignore_ascii_case("manifest"))
@@ -30,37 +30,41 @@ impl Manifest {
             ));
         }
 
+        let file = File::open(path)?;
+
+        Self::read(file)
+    }
+
+    pub(crate) fn read<R: Read>(mut reader: R) -> anyhow::Result<Self> {
         let mut payload = None;
         let mut metadata = None;
         let mut signature = None;
 
-        let mut file = File::open(path)?;
-
         loop {
-            let read_u32 = |file: &mut File| {
+            let read_u32 = |reader: &mut R| {
                 let mut buf = [0; 4];
-                file.read_exact(&mut buf)?;
+                reader.read_exact(&mut buf)?;
                 Ok::<_, anyhow::Error>(u32::from_le_bytes(buf))
             };
 
-            let read_vec = |file: &mut File| {
-                let len = read_u32(file)? as usize;
+            let read_vec = |reader: &mut R| {
+                let len = read_u32(reader)? as usize;
                 let mut buf = vec![0; len];
-                file.read_exact(&mut buf)?;
+                reader.read_exact(&mut buf)?;
                 Ok::<_, anyhow::Error>(buf)
             };
 
-            match read_u32(&mut file)? {
+            match read_u32(&mut reader)? {
                 PROTOBUF_PAYLOAD_MAGIC => {
-                    let buf = read_vec(&mut file)?;
+                    let buf = read_vec(&mut reader)?;
                     payload = Some(ContentManifestPayload::parse_from_bytes(&buf)?);
                 }
                 PROTOBUF_METADATA_MAGIC => {
-                    let buf = read_vec(&mut file)?;
+                    let buf = read_vec(&mut reader)?;
                     metadata = Some(ContentManifestMetadata::parse_from_bytes(&buf)?);
                 }
                 PROTOBUF_SIGNATURE_MAGIC => {
-                    let buf = read_vec(&mut file)?;
+                    let buf = read_vec(&mut reader)?;
                     signature = Some(ContentManifestSignature::parse_from_bytes(&buf)?);
                 }
                 PROTOBUF_ENDOFMANIFEST_MAGIC => break,
