@@ -3,6 +3,7 @@ use std::path::Path;
 use std::{fs::File, io::Read};
 
 use anyhow::anyhow;
+use base64::{engine::general_purpose::STANDARD, Engine};
 use steam_vent_proto::{
     content_manifest::{ContentManifestMetadata, ContentManifestPayload, ContentManifestSignature},
     protobuf::Message,
@@ -103,4 +104,27 @@ impl Manifest {
 
         Ok(())
     }
+
+    pub(crate) fn decrypt_filenames(&mut self, depot_key: &[u8; 32]) -> anyhow::Result<()> {
+        if self.metadata.filenames_encrypted() {
+            for mapping in &mut self.payload.mappings {
+                mapping.set_filename(decrypt_string(mapping.filename(), depot_key)?);
+                if mapping.has_linktarget() {
+                    mapping.set_linktarget(decrypt_string(mapping.linktarget(), depot_key)?);
+                }
+            }
+
+            self.metadata.set_filenames_encrypted(false);
+        }
+
+        Ok(())
+    }
+}
+
+fn decrypt_string(s: &str, depot_key: &[u8; 32]) -> anyhow::Result<String> {
+    let encoded = s.lines().fold(String::new(), |acc, line| acc + line);
+    let ciphertext = STANDARD.decode(&encoded)?;
+    let plaintext =
+        steam_vent_crypto::symmetric_decrypt_without_hmac(ciphertext.as_slice().into(), depot_key)?;
+    Ok(String::from_utf8(plaintext.to_vec())?)
 }

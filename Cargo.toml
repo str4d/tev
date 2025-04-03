@@ -11,12 +11,14 @@ categories = ["command-line-utilities", "games"]
 
 [dependencies]
 anyhow = "1"
+base64 = "0.22"
 byte-unit = { version = "5", default-features = false, features = ["byte"] }
 clap = { version = "4.5", features = ["derive"] }
 ctrlc = "3"
 hex = "0.4"
 nom = "7"
 sha1 = "0.10"
+steam-vent-crypto = "0.2"
 steam-vent-proto = "0.5"
 zip = "2"
 zstd = "0.13"
