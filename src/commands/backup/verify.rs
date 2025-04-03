@@ -37,16 +37,21 @@ impl VerifyBackup {
                 .manifest_dir
                 .as_ref()
                 .zip(sku.manifests.get(&depot))
-                .map(|(manifest_dir, manifest)| {
+                .map(|(manifest_dir, manifest_id)| {
                     let manifest_path =
-                        manifest_dir.join(format!("{}_{}.manifest", depot, manifest));
+                        manifest_dir.join(format!("{}_{}.manifest", depot, manifest_id));
                     let manifest = Manifest::open(&manifest_path).with_context(|| {
                         format!(
-                            "Cannot find manifest {manifest} for depot {depot} in {}",
+                            "Cannot find manifest {manifest_id} for depot {depot} in {}",
                             manifest_dir.display()
                         )
                     })?;
                     if manifest.metadata.depot_id() == depot {
+                        if manifest.metadata.filenames_encrypted() {
+                            println!(
+                                "Manifest {manifest_id} for depot {depot} has encrypted filenames"
+                            );
+                        }
                         Ok(manifest)
                     } else {
                         Err(anyhow!(
