@@ -1,3 +1,4 @@
+use std::io::Write;
 use std::path::Path;
 use std::{fs::File, io::Read};
 
@@ -81,5 +82,25 @@ impl Manifest {
                 signature,
             })
             .ok_or(anyhow!("Missing manifest components"))
+    }
+
+    pub(crate) fn write<W: Write>(&self, mut writer: W) -> anyhow::Result<()> {
+        let write_vec = |writer: &mut W, v: Vec<u8>| {
+            writer.write_all(&(v.len() as u32).to_le_bytes())?;
+            writer.write_all(&v)
+        };
+
+        writer.write_all(&PROTOBUF_PAYLOAD_MAGIC.to_le_bytes())?;
+        write_vec(&mut writer, self.payload.write_to_bytes()?)?;
+
+        writer.write_all(&PROTOBUF_METADATA_MAGIC.to_le_bytes())?;
+        write_vec(&mut writer, self.metadata.write_to_bytes()?)?;
+
+        writer.write_all(&PROTOBUF_SIGNATURE_MAGIC.to_le_bytes())?;
+        write_vec(&mut writer, self.signature.write_to_bytes()?)?;
+
+        writer.write_all(&PROTOBUF_ENDOFMANIFEST_MAGIC.to_le_bytes())?;
+
+        Ok(())
     }
 }
