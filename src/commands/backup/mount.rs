@@ -6,7 +6,7 @@ use std::{
 
 use anyhow::{anyhow, Context};
 use futures_util::future;
-use steam_vent_proto::content_manifest::{
+use steam_vent::proto::content_manifest::{
     content_manifest_payload::FileMapping, ContentManifestMetadata,
 };
 use tokio::runtime::{Builder, Runtime};

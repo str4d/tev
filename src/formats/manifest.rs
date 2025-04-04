@@ -4,7 +4,7 @@ use std::{fs::File, io::Read};
 
 use anyhow::anyhow;
 use base64::{engine::general_purpose::STANDARD, Engine};
-use steam_vent_proto::{
+use steam_vent::proto::{
     content_manifest::{ContentManifestMetadata, ContentManifestPayload, ContentManifestSignature},
     protobuf::Message,
 };

@@ -10,7 +10,7 @@ use dokan::{
     IO_SECURITY_CONTEXT,
 };
 use dokan_sys::win32;
-use steam_vent_proto::content_manifest::content_manifest_payload::FileMapping;
+use steam_vent::proto::content_manifest::content_manifest_payload::FileMapping;
 use widestring::{U16CStr, U16CString};
 use winapi::{shared::ntstatus, um::winnt};
 

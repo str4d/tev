@@ -6,7 +6,7 @@ use std::time::UNIX_EPOCH;
 
 use anyhow::Context;
 use fuser::{FileAttr, FileType, Filesystem, MountOption};
-use steam_vent_proto::content_manifest::content_manifest_payload::FileMapping;
+use steam_vent::proto::content_manifest::content_manifest_payload::FileMapping;
 
 use super::{get_node, is_dir, read_data, BackupFs, Node, ReadError, ROOT_INODE};
 
