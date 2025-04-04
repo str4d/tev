@@ -38,6 +38,10 @@ pub(crate) struct VerifyBackup {
     /// Path to a game's backup folder, or a file within it.
     pub(crate) path: Vec<PathBuf>,
 
+    /// Skip verification of individual chunk SHA-1 digests.
+    #[arg(long)]
+    pub(crate) fast: bool,
+
     /// Path to the folder containing the user's cached manifest files.
     #[arg(long)]
     pub(crate) manifest_dir: Option<PathBuf>,

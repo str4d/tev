@@ -11,7 +11,7 @@ use crate::{
 impl VerifyBackup {
     pub(crate) async fn run(self) -> anyhow::Result<()> {
         for path in self.path {
-            if let Err(e) = verify_backup(&path, self.manifest_dir.as_deref()).await {
+            if let Err(e) = verify_backup(&path, self.manifest_dir.as_deref(), self.fast).await {
                 println!("Failed to verify {}: {e}", path.display());
             }
         }
@@ -20,7 +20,7 @@ impl VerifyBackup {
     }
 }
 
-async fn verify_backup(path: &Path, manifest_dir: Option<&Path>) -> anyhow::Result<()> {
+async fn verify_backup(path: &Path, manifest_dir: Option<&Path>, fast: bool) -> anyhow::Result<()> {
     println!();
 
     let base_dir = {
@@ -89,6 +89,7 @@ async fn verify_backup(path: &Path, manifest_dir: Option<&Path>) -> anyhow::Resu
                             depot,
                             chunkstore_index,
                             chunkstore_length,
+                            fast,
                         )
                         .await
                     })
@@ -127,6 +128,7 @@ async fn verify_chunkstore(
     depot: u32,
     chunkstore_index: u32,
     chunkstore_length: u64,
+    fast: bool,
 ) -> Option<u32> {
     let mut valid = true;
 
@@ -151,6 +153,10 @@ async fn verify_chunkstore(
     let mut bytes_read = 0;
     let chunks = chunkstore.csm.chunks.clone();
     let num_chunks = chunks.len();
+
+    if fast {
+        return valid.then_some(num_chunks as u32);
+    }
 
     for (sha, chunk) in chunks {
         if let Err(e) = chunkstore.chunk_data(sha).await {
