@@ -81,10 +81,21 @@ async fn verify_backup(path: &Path, manifest_dir: Option<&Path>) -> anyhow::Resu
 
         for res in future::join_all(chunkstores.iter().map(
             |(&chunkstore_index, &chunkstore_length)| {
-                let base_dir = base_dir.clone();
-                tokio::spawn(async move {
-                    verify_chunkstore(&base_dir, depot, chunkstore_index, chunkstore_length).await
-                })
+                if let Ok(chunkstore_length) = u64::try_from(chunkstore_length) {
+                    let base_dir = base_dir.clone();
+                    tokio::spawn(async move {
+                        verify_chunkstore(
+                            &base_dir,
+                            depot,
+                            chunkstore_index,
+                            chunkstore_length,
+                        )
+                        .await
+                    })
+                } else {
+                    // Chunkstore length is -1; no idea what that means.
+                    tokio::spawn(std::future::ready(Some(0)))
+                }
             },
         ))
         .await

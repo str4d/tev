@@ -25,7 +25,11 @@ impl Inspect {
                     }
                     if let Some(chunkstores) = sku.chunkstores.get(&depot) {
                         let size = Byte::from_u64(
-                            chunkstores.values().copied().map(u64::from).sum::<u64>(),
+                            chunkstores
+                                .values()
+                                .copied()
+                                .filter_map(|i| u64::try_from(i).ok())
+                                .sum::<u64>(),
                         )
                         .get_appropriate_unit(UnitType::Binary);
                         println!(", Size: {size:#.2}");
