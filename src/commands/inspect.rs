@@ -25,7 +25,11 @@ impl Inspect {
                     }
                     if let Some(chunkstores) = sku.chunkstores.get(&depot) {
                         let size = Byte::from_u64(
-                            chunkstores.values().copied().map(u64::from).sum::<u64>(),
+                            chunkstores
+                                .values()
+                                .copied()
+                                .filter_map(|i| u64::try_from(i).ok())
+                                .sum::<u64>(),
                         )
                         .get_appropriate_unit(UnitType::Binary);
                         println!(", Size: {size:#.2}");
@@ -80,7 +84,7 @@ impl Inspect {
                 println!("Compressed size: {compressed_size:#.2}");
             }
             Some(s) if s.eq_ignore_ascii_case("manifest") => {
-                let manifest = formats::manifest::Manifest::read(&self.path)?;
+                let manifest = formats::manifest::Manifest::open(&self.path)?;
 
                 println!("Manifest: {}", manifest.metadata.gid_manifest());
                 println!("Depot: {}", manifest.metadata.depot_id());

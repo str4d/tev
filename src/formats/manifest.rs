@@ -1,8 +1,10 @@
+use std::io::Write;
 use std::path::Path;
 use std::{fs::File, io::Read};
 
 use anyhow::anyhow;
-use steam_vent_proto::{
+use base64::{engine::general_purpose::STANDARD, Engine};
+use steam_vent::proto::{
     content_manifest::{ContentManifestMetadata, ContentManifestPayload, ContentManifestSignature},
     protobuf::Message,
 };
@@ -20,7 +22,7 @@ pub(crate) struct Manifest {
 }
 
 impl Manifest {
-    pub(crate) fn read(path: &Path) -> anyhow::Result<Self> {
+    pub(crate) fn open(path: &Path) -> anyhow::Result<Self> {
         if !path
             .extension()
             .map_or(false, |s| s.eq_ignore_ascii_case("manifest"))
@@ -30,37 +32,41 @@ impl Manifest {
             ));
         }
 
+        let file = File::open(path)?;
+
+        Self::read(file)
+    }
+
+    pub(crate) fn read<R: Read>(mut reader: R) -> anyhow::Result<Self> {
         let mut payload = None;
         let mut metadata = None;
         let mut signature = None;
 
-        let mut file = File::open(path)?;
-
         loop {
-            let read_u32 = |file: &mut File| {
+            let read_u32 = |reader: &mut R| {
                 let mut buf = [0; 4];
-                file.read_exact(&mut buf)?;
+                reader.read_exact(&mut buf)?;
                 Ok::<_, anyhow::Error>(u32::from_le_bytes(buf))
             };
 
-            let read_vec = |file: &mut File| {
-                let len = read_u32(file)? as usize;
+            let read_vec = |reader: &mut R| {
+                let len = read_u32(reader)? as usize;
                 let mut buf = vec![0; len];
-                file.read_exact(&mut buf)?;
+                reader.read_exact(&mut buf)?;
                 Ok::<_, anyhow::Error>(buf)
             };
 
-            match read_u32(&mut file)? {
+            match read_u32(&mut reader)? {
                 PROTOBUF_PAYLOAD_MAGIC => {
-                    let buf = read_vec(&mut file)?;
+                    let buf = read_vec(&mut reader)?;
                     payload = Some(ContentManifestPayload::parse_from_bytes(&buf)?);
                 }
                 PROTOBUF_METADATA_MAGIC => {
-                    let buf = read_vec(&mut file)?;
+                    let buf = read_vec(&mut reader)?;
                     metadata = Some(ContentManifestMetadata::parse_from_bytes(&buf)?);
                 }
                 PROTOBUF_SIGNATURE_MAGIC => {
-                    let buf = read_vec(&mut file)?;
+                    let buf = read_vec(&mut reader)?;
                     signature = Some(ContentManifestSignature::parse_from_bytes(&buf)?);
                 }
                 PROTOBUF_ENDOFMANIFEST_MAGIC => break,
@@ -78,4 +84,47 @@ impl Manifest {
             })
             .ok_or(anyhow!("Missing manifest components"))
     }
+
+    pub(crate) fn write<W: Write>(&self, mut writer: W) -> anyhow::Result<()> {
+        let write_vec = |writer: &mut W, v: Vec<u8>| {
+            writer.write_all(&(v.len() as u32).to_le_bytes())?;
+            writer.write_all(&v)
+        };
+
+        writer.write_all(&PROTOBUF_PAYLOAD_MAGIC.to_le_bytes())?;
+        write_vec(&mut writer, self.payload.write_to_bytes()?)?;
+
+        writer.write_all(&PROTOBUF_METADATA_MAGIC.to_le_bytes())?;
+        write_vec(&mut writer, self.metadata.write_to_bytes()?)?;
+
+        writer.write_all(&PROTOBUF_SIGNATURE_MAGIC.to_le_bytes())?;
+        write_vec(&mut writer, self.signature.write_to_bytes()?)?;
+
+        writer.write_all(&PROTOBUF_ENDOFMANIFEST_MAGIC.to_le_bytes())?;
+
+        Ok(())
+    }
+
+    pub(crate) fn decrypt_filenames(&mut self, depot_key: &[u8; 32]) -> anyhow::Result<()> {
+        if self.metadata.filenames_encrypted() {
+            for mapping in &mut self.payload.mappings {
+                mapping.set_filename(decrypt_string(mapping.filename(), depot_key)?);
+                if mapping.has_linktarget() {
+                    mapping.set_linktarget(decrypt_string(mapping.linktarget(), depot_key)?);
+                }
+            }
+
+            self.metadata.set_filenames_encrypted(false);
+        }
+
+        Ok(())
+    }
+}
+
+fn decrypt_string(s: &str, depot_key: &[u8; 32]) -> anyhow::Result<String> {
+    let encoded = s.lines().fold(String::new(), |acc, line| acc + line);
+    let ciphertext = STANDARD.decode(&encoded)?;
+    let plaintext =
+        steam_vent_crypto::symmetric_decrypt_without_hmac(ciphertext.as_slice().into(), depot_key)?;
+    Ok(String::from_utf8(plaintext.to_vec())?)
 }

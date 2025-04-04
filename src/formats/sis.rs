@@ -14,7 +14,7 @@ pub(crate) struct StockKeepingUnit {
     pub(crate) apps: Vec<u32>,
     pub(crate) depots: Vec<u32>,
     pub(crate) manifests: BTreeMap<u32, u64>,
-    pub(crate) chunkstores: BTreeMap<u32, BTreeMap<u32, u32>>,
+    pub(crate) chunkstores: BTreeMap<u32, BTreeMap<u32, i32>>,
 }
 
 impl StockKeepingUnit {

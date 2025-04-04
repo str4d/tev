@@ -6,7 +6,7 @@ use std::{
 
 use anyhow::{anyhow, Context};
 use futures_util::future;
-use steam_vent_proto::content_manifest::{
+use steam_vent::proto::content_manifest::{
     content_manifest_payload::FileMapping, ContentManifestMetadata,
 };
 use tokio::runtime::{Builder, Runtime};
@@ -140,7 +140,7 @@ impl BackupFs {
             .iter()
             .map(|(depot, manifest)| {
                 let manifest_path = manifest_dir.join(format!("{}_{}.manifest", depot, manifest));
-                let manifest = Manifest::read(&manifest_path).with_context(|| {
+                let manifest = Manifest::open(&manifest_path).with_context(|| {
                     format!(
                         "Cannot find manifest {manifest} for depot {depot} in {}",
                         manifest_dir.display()
