@@ -10,102 +10,105 @@ use crate::{
 
 impl VerifyBackup {
     pub(crate) async fn run(self) -> anyhow::Result<()> {
-        let base_dir = {
-            let metadata = self.path.metadata()?;
-            if metadata.is_dir() {
-                Ok(self.path)
-            } else if metadata.is_file() {
-                Ok(self
-                    .path
-                    .parent()
-                    .expect("Files always have parents")
-                    .to_path_buf())
-            } else {
-                Err(anyhow!("Path does not exist"))
-            }?
-        };
-
-        let sku = StockKeepingUnit::read(&base_dir.join("sku.sis"))?;
-        println!("Game: {}", sku.name);
-
-        let mut valid = true;
-
-        for depot in sku.depots {
-            println!("Verifying depot {depot}");
-
-            let manifest = self
-                .manifest_dir
-                .as_ref()
-                .zip(sku.manifests.get(&depot))
-                .map(|(manifest_dir, manifest_id)| {
-                    let manifest_path =
-                        manifest_dir.join(format!("{}_{}.manifest", depot, manifest_id));
-                    let manifest = Manifest::open(&manifest_path).with_context(|| {
-                        format!(
-                            "Cannot find manifest {manifest_id} for depot {depot} in {}",
-                            manifest_dir.display()
-                        )
-                    })?;
-                    if manifest.metadata.depot_id() == depot {
-                        if manifest.metadata.filenames_encrypted() {
-                            println!(
-                                "Manifest {manifest_id} for depot {depot} has encrypted filenames"
-                            );
-                        }
-                        Ok(manifest)
-                    } else {
-                        Err(anyhow!(
-                            "{} does not belong to depot {depot}",
-                            manifest_path.display()
-                        ))
-                    }
-                })
-                .transpose()?;
-
-            let chunkstores = sku
-                .chunkstores
-                .get(&depot)
-                .ok_or(anyhow!("Missing chunkstore for depot {depot}"))?;
-
-            let mut depot_chunks = 0;
-
-            for res in future::join_all(chunkstores.iter().map(
-                |(&chunkstore_index, &chunkstore_length)| {
-                    let base_dir = base_dir.clone();
-                    tokio::spawn(async move {
-                        verify_chunkstore(
-                            &base_dir,
-                            depot,
-                            chunkstore_index,
-                            u64::from(chunkstore_length),
-                        )
-                        .await
-                    })
-                },
-            ))
-            .await
-            {
-                if let Some(chunks_read) = res? {
-                    depot_chunks += chunks_read;
-                } else {
-                    valid = false;
-                }
+        for path in self.path {
+            if let Err(e) = verify_backup(&path, self.manifest_dir.as_deref()).await {
+                println!("Failed to verify {}: {e}", path.display());
             }
-
-            if let Some(manifest) = manifest {
-                let unique_chunks = manifest.metadata.unique_chunks();
-                if unique_chunks != depot_chunks {
-                    println!("Depot {depot} has {unique_chunks} chunks in manifest but {depot_chunks} chunks on disk");
-                }
-            }
-        }
-
-        if valid {
-            println!("Depot files match SKU!");
         }
 
         Ok(())
     }
+}
+
+async fn verify_backup(path: &Path, manifest_dir: Option<&Path>) -> anyhow::Result<()> {
+    println!();
+
+    let base_dir = {
+        let metadata = path.metadata()?;
+        if metadata.is_dir() {
+            Ok(path.to_path_buf())
+        } else if metadata.is_file() {
+            Ok(path
+                .parent()
+                .expect("Files always have parents")
+                .to_path_buf())
+        } else {
+            Err(anyhow!("Path does not exist"))
+        }?
+    };
+
+    let sku = StockKeepingUnit::read(&base_dir.join("sku.sis"))?;
+    println!("Game: {}", sku.name);
+
+    let mut valid = true;
+
+    for depot in sku.depots {
+        println!("Verifying depot {depot}");
+
+        let manifest = manifest_dir
+            .zip(sku.manifests.get(&depot))
+            .map(|(manifest_dir, manifest_id)| {
+                let manifest_path =
+                    manifest_dir.join(format!("{}_{}.manifest", depot, manifest_id));
+                let manifest = Manifest::open(&manifest_path).with_context(|| {
+                    format!(
+                        "Cannot find manifest {manifest_id} for depot {depot} in {}",
+                        manifest_dir.display()
+                    )
+                })?;
+                if manifest.metadata.depot_id() == depot {
+                    if manifest.metadata.filenames_encrypted() {
+                        println!(
+                            "Manifest {manifest_id} for depot {depot} has encrypted filenames"
+                        );
+                    }
+                    Ok(manifest)
+                } else {
+                    Err(anyhow!(
+                        "{} does not belong to depot {depot}",
+                        manifest_path.display()
+                    ))
+                }
+            })
+            .transpose()?;
+
+        let chunkstores = sku
+            .chunkstores
+            .get(&depot)
+            .ok_or(anyhow!("Missing chunkstore for depot {depot}"))?;
+
+        let mut depot_chunks = 0;
+
+        for res in future::join_all(chunkstores.iter().map(
+            |(&chunkstore_index, &chunkstore_length)| {
+                let base_dir = base_dir.clone();
+                tokio::spawn(async move {
+                    verify_chunkstore(&base_dir, depot, chunkstore_index, chunkstore_length).await
+                })
+            },
+        ))
+        .await
+        {
+            if let Some(chunks_read) = res? {
+                depot_chunks += chunks_read;
+            } else {
+                valid = false;
+            }
+        }
+
+        if let Some(manifest) = manifest {
+            let unique_chunks = manifest.metadata.unique_chunks();
+            if unique_chunks != depot_chunks {
+                println!("Depot {depot} has {unique_chunks} chunks in manifest but {depot_chunks} chunks on disk");
+            }
+        }
+    }
+
+    if valid {
+        println!("Depot files match SKU!");
+    }
+
+    Ok(())
 }
 
 async fn verify_chunkstore(

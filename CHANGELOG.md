@@ -8,6 +8,10 @@ All notable changes will be documented in this file. The format is based on
 - `--manifest-dir` argument to `tev backup verify`, to optionally verify
   matching cached manifest files.
 
+### Changed
+- `tev backup verify` can now take multiple path arguments to verify multiple
+  backups in sequence.
+
 ## [0.2.0] - 2025-01-05
 ### Added
 - Windows support for `tev backup mount` via [Dokan](https://github.com/dokan-dev/dokany).
